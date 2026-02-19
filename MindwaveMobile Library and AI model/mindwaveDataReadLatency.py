@@ -113,7 +113,7 @@ def parse_payload(payload, csv_file,read_latency):
 									f"{datetime.datetime.now()},{mean_state['attention']},{mean_state['meditation']},{mean_state['poor_signal']},{mean_state['delta']},"
 									f"{mean_state['theta']},{mean_state['low_alpha']},{mean_state['high_alpha']},{mean_state['low_beta']},{mean_state['high_beta']},"
 									f"{mean_state['low_gamma']},{mean_state['mid_gamma']},{read_latency},{proccess_latency},{total_latency}\n"
-								 )
+								)
 					file.flush()
 					# window_buffer = window_buffer[1:]
 					global counter

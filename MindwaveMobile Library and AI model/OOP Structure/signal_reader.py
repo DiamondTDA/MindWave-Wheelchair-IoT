@@ -14,6 +14,7 @@ class SignalReader:
     def __init__(self):
         self.on_raw_received = None  # This is our empty hook (callback)
         # Initializing the internal state of the brainwaves
+        self.last_code = 0
         self.state = {
             "attention": 0,
             "meditation": 0,
@@ -26,7 +27,7 @@ class SignalReader:
             "low_beta": 0,
             "high_beta": 0,
             "low_gamma": 0,
-            "mid_gamma": 0
+            "mid_gamma": 0,
         }
 
     def read_packet(self, ser):
@@ -56,6 +57,7 @@ class SignalReader:
 
     def parse_payload(self, payload):
         """Iterates through the payload to update the state dictionary."""
+        main_code = 0
         while payload:
             code = payload[0]
             payload = payload[1:]
@@ -65,6 +67,8 @@ class SignalReader:
                 code = payload[0]
                 payload = payload[1:]
 
+            self.last_code = code
+            main_code = code
             # Single-byte codes (Attention, Meditation, Poor Signal)
             if code < 0x80:
                 value = payload[0]
@@ -88,8 +92,11 @@ class SignalReader:
                     raw = value[0] * 256 + value[1]
                     if raw >= 32768:
                         raw -= 65536
-                if self.on_raw_received:
-                    self.on_raw_received(raw)
+
+                    self.state["raw"] = raw
+
+                    if self.on_raw_received:
+                        self.on_raw_received(raw)
 
                 elif code == ASIC_EEG_POWER and len(value) >= 24:
                     names = [
@@ -105,3 +112,4 @@ class SignalReader:
                     # Optional: Print for debugging
                     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
                             f"Att: {self.state['attention']} | Med: {self.state['meditation']} | Signal: {self.state['poor_signal']}")
+        return main_code # Tells main.py "Hey, I just finished a 0x83 (Power) packet!"

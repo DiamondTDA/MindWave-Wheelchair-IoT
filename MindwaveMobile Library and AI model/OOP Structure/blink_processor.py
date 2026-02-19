@@ -5,57 +5,67 @@ from scipy.signal import find_peaks
 
 class BlinkProcessor:
     def __init__(self):
-        # Constants from your working code
+        # Configuration
         self.WINDOW_SIZE = 512
-        self.OVERLAP = 0.5
-        self.STEP = int(self.WINDOW_SIZE * (1 - self.OVERLAP))
-        self.THRESHOLD = 1200
-        self.MIN_DIST = 260
-        self.COOLDOWN = 0.6
-        self.DOUBLE_GAP = 1.1
-
-        # Buffers and Counters
+        self.STEP = 256
+        self.THRESHOLD = 1100  # Slightly lowered for better sensitivity
+        self.MIN_DIST = 250    # Minimum samples between peaks within a window
+        
+        # Timing
+        self.DOUBLE_GAP = 1.1  # Max time allowed between blinks in a sequence
+        self.COOLDOWN = 0.4    # Min time to wait before allowing another blink
+        
+        # Buffers
         self.raw_buffer = deque(maxlen=self.WINDOW_SIZE)
         self.sample_counter = 0
-        self.last_blink_time = 0
-        self.prev_blink_time = None
-        self.blink_count = 0
+        
+        # State Tracking
+        self.blink_timestamps = []
+        self.last_detection_time = 0
 
     def process_raw(self, raw_value):
-        """This is the function we 'hook' to the SignalReader."""
         self.raw_buffer.append(raw_value)
         self.sample_counter += 1
 
-        # Only check for peaks once we have enough new samples (Step size)
-        if len(self.raw_buffer) >= self.WINDOW_SIZE and self.sample_counter >= self.STEP:
+        # Process window every 'STEP' samples
+        if self.sample_counter >= self.STEP and len(self.raw_buffer) == self.WINDOW_SIZE:
             self.analyze_window()
             self.sample_counter = 0
+        
+        # Check if the "Blink Sequence" is finished
+        self.check_sequence_completion()
 
     def analyze_window(self):
+        now = time.time()
+        # Convert deque to array for scipy
         data = np.array(self.raw_buffer)
+        
+        # Find peaks that meet height and distance requirements
         peaks, _ = find_peaks(data, height=self.THRESHOLD, distance=self.MIN_DIST)
         
+        if len(peaks) > 0:
+            # We only count the blink if we aren't in a cooldown from the last one
+            if (now - self.last_detection_time) > self.COOLDOWN:
+                self.blink_timestamps.append(now)
+                self.last_detection_time = now
+
+    def check_sequence_completion(self):
+        if not self.blink_timestamps:
+            return
+
         now = time.time()
-        if len(peaks) > 0 and (now - self.last_blink_time) >= self.COOLDOWN:
-            self.handle_detection(now)
-            self.last_blink_time = now
-
-        # Logic to 'finalize' a single or double blink after the gap expires
-        if self.prev_blink_time is not None:
-            if (now - self.prev_blink_time) > self.DOUBLE_GAP:
-                if self.blink_count == 1:
-                    print("Single Blink Detected")
-                elif self.blink_count >= 2:
-                    print("Double Blink Detected")
-                
-                # Reset for next detection
-                self.prev_blink_time = None
-                self.blink_count = 0
-
-    def handle_detection(self, now):
-        if self.prev_blink_time is None:
-            self.prev_blink_time = now
-            self.blink_count = 1
-        else:
-            if (now - self.prev_blink_time) <= self.DOUBLE_GAP:
-                self.blink_count += 1
+        # If the last blink happened more than DOUBLE_GAP seconds ago, the sequence is over
+        if (now - self.last_detection_time) > self.DOUBLE_GAP:
+            count = len(self.blink_timestamps)
+            
+            action = 0
+            if count == 1:
+                action = 1
+            elif count == 2:
+                action = 2
+            elif count == 3:
+                action = 3
+            
+            # Clear the list to start a fresh sequence
+            self.blink_timestamps = []
+            return action

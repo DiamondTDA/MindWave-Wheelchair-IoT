@@ -98,7 +98,7 @@ def parse_payload(payload, state, csv_file):
                 global blink_counter
                 raw = value[0] * 256 + value[1]
                 if raw >= 32768:
-                     raw -= 65536
+                    raw -= 65536
                 raw_buffer.append(raw)
                 sample_counter +=1
                 if len(raw_buffer) >= WINDOW_SIZE_BLINK and sample_counter >= STEP_BLINK:

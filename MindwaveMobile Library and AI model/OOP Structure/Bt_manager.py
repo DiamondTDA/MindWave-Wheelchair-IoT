@@ -2,7 +2,7 @@ import serial
 import time
 
 class BTManager:
-    def __init__(self, port='/dev/rfcomm0', baud=57600):
+    def __init__(self, port='COM3', baud=57600):
         self.port = port
         self.baud = baud
         self.ser = None

@@ -22,7 +22,7 @@ current_command = ""
 window_buffer = deque(maxlen=WINDOW_SIZE)
 counter = 0
 baud_rate = 57600
-serial_port = '/dev/rfcomm0'
+serial_port = 'COM3'
 def read_packet(s):
 	try:
 		if s.read() == SYNC and s.read() == SYNC:
@@ -60,13 +60,12 @@ def parse_payload(payload, csv_file):
 
 			if code == POOR_SIGNAL:
 				state["poor_signal"] = value
-
-			elif code == ATTENTION:
+			elif code == 0x16:
 				state["attention"] = value
-
 			elif code == MEDITATION:
 				state["meditation"] = value
-
+			elif code == ATTENTION: # This is the BLINK code
+				state["blink"] = value
 			# elif code == BLINK:
 				# state["blink"] = value
 
@@ -108,8 +107,12 @@ def parse_payload(payload, csv_file):
 					csv_file.write(
 									f"{datetime.datetime.now()},{mean_state['attention']},{mean_state['meditation']},{mean_state['poor_signal']},{mean_state['delta']},"
 									f"{mean_state['theta']},{mean_state['low_alpha']},{mean_state['high_alpha']},{mean_state['low_beta']},{mean_state['high_beta']},"
-									f"{mean_state['low_gamma']},{mean_state['mid_gamma']},{mean_state['command']}\n"
-								 )
+									f"{mean_state['low_gamma']},{mean_state['mid_gamma']},{mean_state['command']},{state['blink']}\n"
+								)
+					print(f"{datetime.datetime.now()},{mean_state['attention']},{mean_state['meditation']},{mean_state['poor_signal']},{mean_state['delta']},"
+									f"{mean_state['theta']},{mean_state['low_alpha']},{mean_state['high_alpha']},{mean_state['low_beta']},{mean_state['high_beta']},"
+									f"{mean_state['low_gamma']},{mean_state['mid_gamma']},{mean_state['command']},{state['blink']}\n"
+								)
 					file.flush()
 
 					global counter
@@ -164,7 +167,8 @@ state = {
 	"low_beta": 0,
 	"high_beta": 0,
 	"low_gamma": 0,
-	"mid_gamma" : 0
+	"mid_gamma" : 0,
+	"blink": 0
 }
 
 class EndReading(Exception):
@@ -183,7 +187,7 @@ try:
 		if number == 1:
 			name = input("Choose the name for the File,same File Name replaces its contents: ")
 			file = open(os.path.join(os.getcwd(),f"Readings/{name}.csv"),"w")
-			file.write("timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,command\n")
+			file.write("timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,command,blink\n")
 			print("File Created/Replaced Successfully")
 		elif number == 2: #append
 			Readings = os.listdir(os.path.join(os.getcwd(),"Readings"))
@@ -191,7 +195,7 @@ try:
 		elif number == 3: #replace
 			Readings = os.listdir(os.path.join(os.getcwd(),"Readings"))
 			file = replace_or_append_file(number,Readings)
-			file.write("timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,command\n")
+			file.write("timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,command,blnik\n")
 		else:
 			raise Exit("Program exit")
 	print("Window Size?")
@@ -206,6 +210,10 @@ try:
 		time.sleep(1)
 	print("Reading is started now")
 	while ser.is_open:
+		if ser.in_waiting > 500:
+			print(f"⚠️ LAG DETECTED ({ser.in_waiting} bytes). CLEARING BUFFER...")
+			ser.reset_input_buffer() # Throw away the old stuff
+			continue # Jump to the top of the loop for fresh data
 		payload = read_packet(ser)
 		if payload:
 			parse_payload(payload, file)
