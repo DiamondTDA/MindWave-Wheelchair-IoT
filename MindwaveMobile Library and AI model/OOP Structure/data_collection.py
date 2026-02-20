@@ -7,8 +7,8 @@ class DataCollector:
         self.headers = [
             "timestamp", "attention", "meditation", "poor_signal",
             "delta", "theta", "low_alpha", "high_alpha",
-            "low_beta", "high_beta", "low_gamma", "mid_gamma",
-            "label", "total_latency", "logic_time" 
+            "low_beta", "high_beta", "low_gamma", "mid_gamma","blink",
+            "label", "total_latency(ms)", "logic_time(ms)" 
         ]
 
     def get_file_handle(self):

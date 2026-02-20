@@ -13,7 +13,7 @@ class BlinkProcessor:
         
         # Timing
         self.DOUBLE_GAP = 1.1  # Max time allowed between blinks in a sequence
-        self.COOLDOWN = 0.4    # Min time to wait before allowing another blink
+        self.COOLDOWN = 0.7    # Min time to wait before allowing another blink
         
         # Buffers
         self.raw_buffer = deque(maxlen=self.WINDOW_SIZE)
@@ -33,7 +33,7 @@ class BlinkProcessor:
             self.sample_counter = 0
         
         # Check if the "Blink Sequence" is finished
-        self.check_sequence_completion()
+        return self.check_sequence_completion()
 
     def analyze_window(self):
         now = time.time()

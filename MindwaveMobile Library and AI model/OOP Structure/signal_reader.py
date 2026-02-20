@@ -14,12 +14,10 @@ class SignalReader:
     def __init__(self):
         self.on_raw_received = None  # This is our empty hook (callback)
         # Initializing the internal state of the brainwaves
-        self.last_code = 0
         self.state = {
             "attention": 0,
             "meditation": 0,
             "poor_signal": 200,
-            "raw": 0,
             "delta": 0,
             "theta": 0,
             "low_alpha": 0,
@@ -28,6 +26,7 @@ class SignalReader:
             "high_beta": 0,
             "low_gamma": 0,
             "mid_gamma": 0,
+            "blink": 0
         }
 
     def read_packet(self, ser):
@@ -57,7 +56,8 @@ class SignalReader:
 
     def parse_payload(self, payload):
         """Iterates through the payload to update the state dictionary."""
-        main_code = 0
+        is_power_updated = False
+
         while payload:
             code = payload[0]
             payload = payload[1:]
@@ -67,8 +67,6 @@ class SignalReader:
                 code = payload[0]
                 payload = payload[1:]
 
-            self.last_code = code
-            main_code = code
             # Single-byte codes (Attention, Meditation, Poor Signal)
             if code < 0x80:
                 value = payload[0]
@@ -93,7 +91,7 @@ class SignalReader:
                     if raw >= 32768:
                         raw -= 65536
 
-                    self.state["raw"] = raw
+                    # self.state["raw"] = raw
 
                     if self.on_raw_received:
                         self.on_raw_received(raw)
@@ -109,7 +107,11 @@ class SignalReader:
                         self.state[name] = value[j]*65536 + value[j+1]*256 + value[j+2]
                         j += 3
                     
+                    is_power_updated = True
+
                     # Optional: Print for debugging
                     print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
                             f"Att: {self.state['attention']} | Med: {self.state['meditation']} | Signal: {self.state['poor_signal']}")
-        return main_code # Tells main.py "Hey, I just finished a 0x83 (Power) packet!"
+        if is_power_updated:
+            return self.state
+        return None

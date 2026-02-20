@@ -1,1 +1,4 @@
-timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,label,total_latency,logic_time
+timestamp,attention,meditation,poor_signal,delta,theta,low_alpha,high_alpha,low_beta,high_beta,low_gamma,mid_gamma,blink,label,total_latency(ms),logic_time(ms)
+16:53:00,80,63,0,42352,8940,3901,7465,10956,9844,8413,264069,0,F,0.20299997413530946,0.10300002759322524
+16:53:01,83,57,0,22372,459639,159912,47547,100865,71571,25371,250419,0,F,2.431800006888807,0.103199970908463
+16:53:02,61,50,0,360779,16795,2381,2663,1131,1023,451,3898,0,F,2.4893999798223376,0.09309995220974088
