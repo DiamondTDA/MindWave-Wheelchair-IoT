@@ -3,7 +3,7 @@ import os
 import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score, classification_report
 
 class BCIModel:
     def __init__(self, model_path="bci_rf_model.joblib"):
@@ -46,8 +46,15 @@ class BCIModel:
         
         # Test the quality
         predictions = self.model.predict(X_test)
-        print(f"Training Complete! Accuracy: {accuracy_score(y_test, predictions):.2f}")
-        print(f"Best Parameters: {grid_search.best_params_}")
+        f1 = f1_score(y_test, predictions, pos_label='F') # Assuming 'F' is our positive target right now
+        
+        print("\n" + "="*40)
+        print(f"🧠 MODEL F1-SCORE (Forward): {f1:.2f}")
+        print("="*40 + "\n")
+        
+        print("Detailed Classification Report:")
+        print(classification_report(y_test, predictions))
+        print(f"\nBest Parameters from GridSearch: {grid_search.best_params_}")
 
         # Save the model
         joblib.dump(self.model, self.model_path)
